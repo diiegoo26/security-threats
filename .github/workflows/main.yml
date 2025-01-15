@@ -17,3 +17,16 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: snyk.sarif
+
+      - name: Archive source code on error
+        if: failure() # Only if the previous steps failed
+        run: |
+          echo "Errors detected. Archiving source code..."
+          zip -r error-source-code.zip .
+          echo "Source code archived in error-source-code.zip"
+      - name: Upload source code as artifact
+        if: failure() # Only if the previous steps failed
+        uses: actions/upload-artifact@v3
+        with:
+          name: error-source-code
+          path: error-source-code.zip
