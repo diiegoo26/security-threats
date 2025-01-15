@@ -1,36 +1,24 @@
 name: Scan code with Snyk
-
-on:
-  push: # Ejecutar en cada push
-    branches:
-      - "**" # Aplica a todas las ramas
-  workflow_dispatch: # Permite ejecutarlo manualmente desde la interfaz de GitHub Actions
-
+on: push
 jobs:
   security:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Clonar el repositorio
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # 2. Ejecutar Snyk para analizar vulnerabilidades
+      - uses: actions/checkout@master
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
+        continue-on-error: true # To make sure that SARIF upload gets called
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: test
           args: --sarif-file-output=snyk.sarif --all-projects
-
-      # 3. Subir los resultados de Snyk a GitHub Code Scanning
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: snyk.sarif
 
-      # 4. Archivar el código fuente si todo está correcto
+      # 1. Archivar el código fuente
       - name: Archive source code on success
         if: success() # Solo si todas las acciones anteriores son exitosas
         run: |
@@ -38,7 +26,7 @@ jobs:
           zip -r success-source-code.zip .
           echo "Source code archived in success-source-code.zip"
 
-      # 5. Subir el archivo ZIP como artefacto
+      # 2. Subir el archivo ZIP como artefacto
       - name: Upload source code as artifact
         if: success() # Solo si todas las acciones anteriores son exitosas
         uses: actions/upload-artifact@v3
