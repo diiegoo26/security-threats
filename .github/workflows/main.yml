@@ -18,18 +18,29 @@ jobs:
         with:
           sarif_file: snyk.sarif
 
-      # 1. Archivar el código fuente
-      - name: Archive source code on success
-        if: success() # Solo si todas las acciones anteriores son exitosas
+      # 1. Verificar que el código es seguro
+      - name: Verify security scan results
+        id: verify_scan
         run: |
-          echo "All steps completed successfully. Archiving source code..."
-          zip -r success-source-code.zip .
-          echo "Source code archived in success-source-code.zip"
+          if grep -q "error" snyk.sarif; then
+            echo "Security issues detected. Failing the workflow."
+            exit 1
+          else
+            echo "No security issues detected. Proceeding with archiving."
+          fi
 
-      # 2. Subir el archivo ZIP como artefacto
+      # 2. Archivar el código fuente si es seguro
+      - name: Archive source code
+        if: success() # Solo si no se detectaron vulnerabilidades
+        run: |
+          echo "Archiving source code..."
+          zip -r secure-source-code.zip .
+          echo "Source code archived in secure-source-code.zip"
+
+      # 3. Subir el archivo ZIP como artefacto
       - name: Upload source code as artifact
-        if: success() # Solo si todas las acciones anteriores son exitosas
+        if: success() # Solo si no se detectaron vulnerabilidades
         uses: actions/upload-artifact@v3
         with:
-          name: success-source-code
-          path: success-source-code.zip
+          name: secure-source-code
+          path: secure-source-code.zip
