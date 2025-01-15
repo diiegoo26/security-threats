@@ -18,7 +18,6 @@ jobs:
       # 2. Ejecutar Snyk para analizar vulnerabilidades
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
-        continue-on-error: false # Detener el flujo en caso de fallo
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -31,18 +30,18 @@ jobs:
         with:
           sarif_file: snyk.sarif
 
-      # 4. Archivar el código fuente en caso de error
-      - name: Archive source code on error
-        if: failure() # Solo si las acciones anteriores fallan
+      # 4. Archivar el código fuente si todo está correcto
+      - name: Archive source code on success
+        if: success() # Solo si todas las acciones anteriores son exitosas
         run: |
-          echo "Errors detected. Archiving source code..."
-          zip -r error-source-code.zip .
-          echo "Source code archived in error-source-code.zip"
+          echo "All steps completed successfully. Archiving source code..."
+          zip -r success-source-code.zip .
+          echo "Source code archived in success-source-code.zip"
 
       # 5. Subir el archivo ZIP como artefacto
       - name: Upload source code as artifact
-        if: failure() # Solo si las acciones anteriores fallan
+        if: success() # Solo si todas las acciones anteriores son exitosas
         uses: actions/upload-artifact@v3
         with:
-          name: error-source-code
-          path: error-source-code.zip
+          name: success-source-code
+          path: success-source-code.zip
