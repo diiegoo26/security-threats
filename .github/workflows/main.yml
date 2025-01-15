@@ -4,20 +4,21 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      # 1. Clonar el repositorio
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # 2. Ejecutar Snyk para analizar vulnerabilidades
+      - uses: actions/checkout@master
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
+        continue-on-error: true # To make sure that SARIF upload gets called
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: test
-          args: --sarif-file-output=snyk.sarif --all-projects --severity-threshold=high
+          args: --sarif-file-output=snyk.sarif --all-projects
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk.sarif
 
-      # 3. Verificar que el código es seguro
+      # 1. Verificar que el código es seguro
       - name: Verify security scan results
         id: verify_scan
         run: |
@@ -28,7 +29,7 @@ jobs:
             echo "No security issues detected. Proceeding with archiving."
           fi
 
-      # 4. Archivar el código fuente si es seguro
+      # 2. Archivar el código fuente si es seguro
       - name: Archive source code
         if: success() # Solo si no se detectaron vulnerabilidades
         run: |
@@ -36,7 +37,7 @@ jobs:
           zip -r secure-source-code.zip .
           echo "Source code archived in secure-source-code.zip"
 
-      # 5. Subir el archivo ZIP como artefacto
+      # 3. Subir el archivo ZIP como artefacto
       - name: Upload source code as artifact
         if: success() # Solo si no se detectaron vulnerabilidades
         uses: actions/upload-artifact@v3
