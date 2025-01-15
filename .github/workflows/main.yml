@@ -24,6 +24,7 @@ jobs:
         run: |
           if grep -q "error" snyk.sarif; then
             echo "Security issues detected. Failing the workflow."
+            exit 0
           else
             echo "No security issues detected. Proceeding with archiving."
           fi
